@@ -1,0 +1,67 @@
+#include <stdio.h>
+
+#define POLYNOMIAL 0x8408 // x^16 + x^12 + x^5 + 1
+#define PRESET_VALUE 0xFFFF
+#define CHECK_VALUE 0xF0B8
+#define NUMBER_OF_BYTES 4 // Example: 4 data bytes
+#define CALC_CRC 1
+#define CHECK_CRC 0
+
+void main()
+{
+	unsigned int current_crc_value;
+	unsigned char array_of_databytes[NUMBER_OF_BYTES + 2] = {1, 2, 3, 4, 0x91, 0x39};
+	int number_of_databytes = NUMBER_OF_BYTES;
+	int calculate_or_check_crc;
+	int i, j;
+	calculate_or_check_crc = CALC_CRC;
+	// calculate_or_check_crc == CHECK_CRC; // This could be and other example
+	if(calculate_or_check_crc == CALC_CRC)
+	{
+	number_of_databytes = NUMBER_OF_BYTES;
+	}
+	else // check CRC
+	{
+	number_of_databytes = NUMBER_OF_BYTES + 2;
+	}
+	
+	current_crc_value = PRESET_VALUE;
+	for (i = 0; i < number_of_databytes; i++)
+	{
+		current_crc_value = current_crc_value^((unsigned int)array_of_databytes[i]);
+	    for (j = 0; j < 8; j++)
+		{
+			if (current_crc_value & 0x0001)
+			{
+				current_crc_value = (current_crc_value >> 1) ^ POLYNOMIAL;
+			}
+			else
+			{
+				current_crc_value = (current_crc_value >> 1);
+			}
+		}
+	}
+	
+	if (calculate_or_check_crc == CALC_CRC)
+	{
+	current_crc_value = ~current_crc_value;
+	printf ("CRC-ISO/IEC 13239 of { 1,2, 3, 4 } is '3991'\n");
+	printf ("Generated CRC is '%04X'\n", current_crc_value);
+	printf ("The Least Significant Byte (transmitted first) is: '%02X'\n",(current_crc_value) & 0xFF);
+	printf ("The Most Significant Byte (transmitted second) is: '%02X'\n",(current_crc_value >> 8) & 0xFF);
+	printf ("Executing this program when CHECK_CRC generates: 'F0B8'\n");
+// current_crc_value is now ready to be appended to the data stream
+// (first LSByte, then MSByte)
+	}
+	else // check CRC
+	{
+		if (current_crc_value == CHECK_VALUE)
+		{
+			printf("Checked CRC is ok (0x%04X)\n", current_crc_value);
+		}
+		else
+		{
+			printf("Checked CRC is NOT ok (0x%04X)\n", current_crc_value);
+		}
+	}
+}
